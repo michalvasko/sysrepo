@@ -40,38 +40,43 @@
  * @param [in] rp_session
  * @param [in] get_items_ctx - cache that can speed up the request. If the
  * subsequent nodes are requested.
- * @param [in] data_tree
+ * @param [in] data_trees
+ * @param [in] data_teee_count
  * @param [in] xpath
  * @param [in] offset - how many nodes should be skipped at the beginning of the selection
  * @param [in] limit - maximum number of nodes that could be returned
  * @param [out] nodes
  * @return Error code (SR_ERR_OK on success), SR_ERR_NOT_FOUND
  */
-int rp_dt_find_nodes_with_opts(dm_ctx_t *dm_ctx, rp_session_t *rp_session, rp_dt_get_items_ctx_t *get_items_ctx, struct lyd_node *data_tree, const char *xpath,
-                              size_t offset, size_t limit, struct ly_set **nodes);
+int rp_dt_find_nodes_with_opts(dm_ctx_t *dm_ctx, rp_session_t *rp_session, rp_dt_get_items_ctx_t *get_items_ctx,
+        struct lyd_node **data_trees, size_t data_tree_count, const char *xpath, size_t offset, size_t limit, struct ly_set **nodes);
 
 /**
  * @brief Looks up the node matching xpath. If there are more than one node in result
  * SR_ERR_INVAL_ARG is returned.
  * @param [in] dm_ctx
- * @param [in] data_tree
+ * @param [in] data_trees
+ * @param [in] data_tree_count
  * @param [in] xpath
  * @param [in] check_enable
  * @param [out] node
  * @return Error code (SR_ERR_OK on success)
  */
-int rp_dt_find_node(const dm_ctx_t *dm_ctx, struct lyd_node *data_tree, const char *xpath, bool check_enable, struct lyd_node **node);
+int rp_dt_find_node(const dm_ctx_t *dm_ctx, struct lyd_node **data_trees, size_t data_tree_ocunt, const char *xpath,
+        bool check_enable, struct lyd_node **node);
 
 /**
  * @brief Looks up the nodes matching xpath.
  * @param [in] dm_ctx
- * @param [in] data_tree
+ * @param [in] data_trees
+ * @param [in] data_tree_count
  * @param [in] xpath
  * @param [in] check_enable
  * @param [out] nodes
  * @return Error code (SR_ERR_OK on success)
  */
-int rp_dt_find_nodes(const dm_ctx_t *dm_ctx, struct lyd_node *data_tree, const char *xpath, bool check_enable, struct ly_set **nodes);
+int rp_dt_find_nodes(const dm_ctx_t *dm_ctx, struct lyd_node **data_trees, size_t data_tree_count, const char *xpath,
+            bool check_enable, struct ly_set **nodes);
 
 /**
  * @brief Find matching changes

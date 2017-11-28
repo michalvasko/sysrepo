@@ -27,67 +27,78 @@
 #include "rp_dt_filter.h"
 
 int
-rp_dt_find_nodes(const dm_ctx_t *dm_ctx, struct lyd_node *data_tree, const char *xpath, bool check_enable, struct ly_set **nodes)
+rp_dt_find_nodes(const dm_ctx_t *dm_ctx, struct lyd_node **data_trees, size_t data_tree_count, const char *xpath,
+        bool check_enable, struct ly_set **nodes)
 {
     CHECK_NULL_ARG3(dm_ctx, xpath, nodes);
     int rc = SR_ERR_OK;
+    size_t i = 0;
+    struct ly_set *res = NULL;
     struct lys_submodule *sub = NULL;
-    if (NULL == data_tree) {
-        return SR_ERR_NOT_FOUND;
-    }
-    CHECK_NULL_ARG3(data_tree->schema, data_tree->schema->module, data_tree->schema->module->name);
-    if (data_tree->schema->module->type) {
-        sub = (struct lys_submodule *) data_tree->schema->module;
-        CHECK_NULL_ARG3(sub, sub->belongsto, sub->belongsto->name);
-    }
-    struct ly_set *res = lyd_find_path(data_tree, xpath);
-    if (NULL == res) {
-        SR_LOG_ERR_MSG("Lyd find path failed");
-        return LY_EINVAL == ly_errno || LY_EVALID == ly_errno ? SR_ERR_INVAL_ARG : SR_ERR_INTERNAL;
-    }
 
-    if (check_enable) {
-        /* lock ly_ctx_lock to schema_info_tree*/
-        /* for submodule lock the main module*/
-        const char *module_name = sub == NULL ? data_tree->schema->module->name : sub->belongsto->name;
+    *nodes = NULL;
 
-        dm_schema_info_t *si = NULL;
-        rc = dm_get_module_and_lock((dm_ctx_t *) dm_ctx, module_name, &si);
-        if (rc != SR_ERR_OK) {
-            SR_LOG_ERR("Get schema info failed for %s", module_name);
-            ly_set_free(res);
-            return rc;
+    for (i = 0; i < data_tree_count; ++i) {
+        if (data_trees[i]->schema->module->type) {
+            sub = (struct lys_submodule *) data_trees[i]->schema->module;
+            CHECK_NULL_ARG3(sub, sub->belongsto, sub->belongsto->name);
         }
-        for (int i = res->number - 1; i >= 0; i--) {
-            if (!dm_is_enabled_check_recursively(res->set.d[i]->schema)) {
-                memmove(&res->set.d[i],
-                        &res->set.d[i + 1],
-                        (res->number - i - 1) * sizeof (*res->set.d));
-                res->number--;
+        res = lyd_find_path(data_trees[i], xpath);
+        if (NULL == res) {
+            SR_LOG_ERR_MSG("Lyd find path failed");
+            return LY_EINVAL == ly_errno || LY_EVALID == ly_errno ? SR_ERR_INVAL_ARG : SR_ERR_INTERNAL;
+        }
+
+        if (check_enable) {
+            /* lock ly_ctx_lock to schema_info_tree */
+            /* for submodule lock the main module */
+            const char *module_name = sub == NULL ? data_trees[i]->schema->module->name : sub->belongsto->name;
+
+            dm_schema_info_t *si = NULL;
+            rc = dm_get_module_and_lock((dm_ctx_t *) dm_ctx, module_name, &si);
+            if (rc != SR_ERR_OK) {
+                SR_LOG_ERR("Get schema info failed for %s", module_name);
+                ly_set_free(res);
+                return rc;
             }
+            for (int i = res->number - 1; i >= 0; i--) {
+                if (!dm_is_enabled_check_recursively(res->set.d[i]->schema)) {
+                    memmove(&res->set.d[i],
+                            &res->set.d[i + 1],
+                            (res->number - i - 1) * sizeof (*res->set.d));
+                    res->number--;
+                }
+            }
+            pthread_rwlock_unlock(&si->model_lock);
         }
-        pthread_rwlock_unlock(&si->model_lock);
+
+        if (NULL == *nodes) {
+            *nodes = res;
+        } else {
+            ly_set_merge(*nodes, res, LY_SET_OPT_USEASLIST);
+        }
     }
 
-    if (0 == res->number) {
-        ly_set_free(res);
+    if (NULL == *nodes || 0 == (*nodes)->number) {
+        ly_set_free(*nodes);
+        *nodes = NULL;
         return SR_ERR_NOT_FOUND;
     }
-    *nodes = res;
     return SR_ERR_OK;
 
 }
 
 int
-rp_dt_find_node(const dm_ctx_t *dm_ctx, struct lyd_node *data_tree, const char *xpath, bool check_enable, struct lyd_node **node)
+rp_dt_find_node(const dm_ctx_t *dm_ctx, struct lyd_node **data_trees, size_t data_tree_count, const char *xpath,
+        bool check_enable, struct lyd_node **node)
 {
     CHECK_NULL_ARG3(dm_ctx, xpath, node);
-    if (NULL == data_tree) {
+    if (0 == data_tree_count) {
         return SR_ERR_NOT_FOUND;
     }
     int rc = SR_ERR_OK;
     struct ly_set *res = NULL;
-    rc = rp_dt_find_nodes(dm_ctx, data_tree, xpath, check_enable, &res);
+    rc = rp_dt_find_nodes(dm_ctx, data_trees, data_tree_count, xpath, check_enable, &res);
     if (SR_ERR_OK != rc) {
         return rc;
     } else if (1 != res->number) {
@@ -101,10 +112,10 @@ rp_dt_find_node(const dm_ctx_t *dm_ctx, struct lyd_node *data_tree, const char *
 }
 
 int
-rp_dt_find_nodes_with_opts(dm_ctx_t *dm_ctx, rp_session_t *rp_session, rp_dt_get_items_ctx_t *get_items_ctx, struct lyd_node *data_tree,
-        const char *xpath, size_t offset, size_t limit, struct ly_set **nodes)
+rp_dt_find_nodes_with_opts(dm_ctx_t *dm_ctx, rp_session_t *rp_session, rp_dt_get_items_ctx_t *get_items_ctx,
+        struct lyd_node **data_trees, size_t data_tree_count, const char *xpath, size_t offset, size_t limit, struct ly_set **nodes)
 {
-    CHECK_NULL_ARG5(dm_ctx, rp_session, get_items_ctx, data_tree, xpath);
+    CHECK_NULL_ARG5(dm_ctx, rp_session, get_items_ctx, data_trees, xpath);
     CHECK_NULL_ARG(nodes);
 
     int rc = SR_ERR_OK;
@@ -116,7 +127,7 @@ rp_dt_find_nodes_with_opts(dm_ctx_t *dm_ctx, rp_session_t *rp_session, rp_dt_get
             offset != get_items_ctx->offset) {
         ly_set_free(get_items_ctx->nodes);
         get_items_ctx->nodes = NULL;
-        rc = rp_dt_find_nodes(dm_ctx, data_tree, xpath, dm_is_running_ds_session(rp_session->dm_session),
+        rc = rp_dt_find_nodes(dm_ctx, data_trees, data_tree_count, xpath, dm_is_running_ds_session(rp_session->dm_session),
                 &get_items_ctx->nodes);
 
         if (SR_ERR_OK != rc) {
@@ -137,7 +148,7 @@ rp_dt_find_nodes_with_opts(dm_ctx_t *dm_ctx, rp_session_t *rp_session, rp_dt_get
         get_items_ctx->offset = offset;
 
         /* filter nodes by read access */
-        rc = rp_dt_nacm_filtering(dm_ctx, rp_session, data_tree, get_items_ctx->nodes->set.d,
+        rc = rp_dt_nacm_filtering(dm_ctx, rp_session, get_items_ctx->nodes->set.d,
                 &get_items_ctx->nodes->number);
         CHECK_RC_MSG_RETURN(rc, "Failed to filter nodes by NACM read access.");
 

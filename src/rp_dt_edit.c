@@ -195,7 +195,7 @@ rp_dt_delete_item(dm_ctx_t *dm_ctx, dm_session_t *session, const char *xpath, co
     CHECK_RC_LOG_RETURN(rc, "Getting data tree failed for xpath '%s'", xpath);
 
     /* find nodes nodes to be deleted */
-    rc = rp_dt_find_nodes(dm_ctx, info->node, xpath, dm_is_running_ds_session(session), &nodes);
+    rc = rp_dt_find_nodes(dm_ctx, &info->node, (info->node ? 1 : 0), xpath, dm_is_running_ds_session(session), &nodes);
     if (SR_ERR_NOT_FOUND == rc) {
         rc = rp_dt_validate_node_xpath(dm_ctx, session, xpath, NULL, NULL);
         if (SR_ERR_OK != rc) {
@@ -410,7 +410,7 @@ rp_dt_set_item(dm_ctx_t *dm_ctx, dm_session_t *session, const char *xpath, const
 
     /* setting a leaf with default value should pass even with SR_EDIT_STRICT */
     if ((SR_EDIT_STRICT & options) && sch_node->nodetype == LYS_LEAF && ((struct lys_node_leaf *) sch_node)->dflt != NULL) {
-        rc = rp_dt_find_node(dm_ctx, info->node, xpath, dm_is_running_ds_session(session), &node);
+        rc = rp_dt_find_node(dm_ctx, &info->node, info->node ? 1 : 0, xpath, dm_is_running_ds_session(session), &node);
         if (SR_ERR_NOT_FOUND != rc) {
             CHECK_RC_LOG_GOTO(rc, cleanup, "Default node %s not found", xpath);
         } else {
@@ -441,7 +441,7 @@ rp_dt_set_item(dm_ctx_t *dm_ctx, dm_session_t *session, const char *xpath, const
     /* remove default tag if the default value has been explicitly set or overwritten */
     if (SR_ERR_OK == rc && sch_node->nodetype == LYS_LEAF && ((struct lys_node_leaf *) sch_node)->dflt != NULL) {
         if (NULL == node) {
-            rc = rp_dt_find_node(dm_ctx, info->node, xpath, dm_is_running_ds_session(session), &node);
+            rc = rp_dt_find_node(dm_ctx, &info->node, info->node ? 1 : 0, xpath, dm_is_running_ds_session(session), &node);
             CHECK_RC_LOG_GOTO(rc, cleanup, "Created node %s not found", xpath);
         }
         node->dflt = 0;
@@ -480,8 +480,7 @@ rp_dt_move_list(dm_ctx_t *dm_ctx, dm_session_t *session, const char *xpath, sr_m
     module_name = NULL;
     CHECK_RC_LOG_RETURN(rc, "Getting data tree failed for xpath '%s'", xpath);
 
-
-    rc = rp_dt_find_node(dm_ctx, info->node, xpath, dm_is_running_ds_session(session), &node);
+    rc = rp_dt_find_node(dm_ctx, &info->node, info->node ? 1 : 0, xpath, dm_is_running_ds_session(session), &node);
     if (SR_ERR_NOT_FOUND == rc) {
         SR_LOG_ERR("List not found %s", xpath);
         return SR_ERR_INVAL_ARG;
@@ -496,7 +495,7 @@ rp_dt_move_list(dm_ctx_t *dm_ctx, dm_session_t *session, const char *xpath, sr_m
     }
 
     if ((SR_MOVE_AFTER == position || SR_MOVE_BEFORE == position) && NULL != relative_item) {
-        rc = rp_dt_find_node(dm_ctx, info->node, relative_item, dm_is_running_ds_session(session), &sibling);
+        rc = rp_dt_find_node(dm_ctx, &info->node, info->node ? 1 : 0, relative_item, dm_is_running_ds_session(session), &sibling);
         if (SR_ERR_NOT_FOUND == rc) {
             rc = dm_report_error(session, "Relative item for move operation not found", relative_item, SR_ERR_INVAL_ARG);
             goto cleanup;

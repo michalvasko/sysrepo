@@ -178,16 +178,16 @@ rp_dt_get_values_from_nodes(sr_mem_ctx_t *sr_mem, struct ly_set *nodes, sr_val_t
 }
 
 int
-rp_dt_get_value(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node *data_tree, sr_mem_ctx_t *sr_mem,
-        const char *xpath, bool check_enabled, sr_val_t **value)
+rp_dt_get_value(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node **data_trees, size_t data_tree_count,
+        sr_mem_ctx_t *sr_mem, const char *xpath, bool check_enabled, sr_val_t **value)
 {
-    CHECK_NULL_ARG5(dm_ctx, rp_session, data_tree, xpath, value);
+    CHECK_NULL_ARG4(dm_ctx, rp_session, xpath, value);
     int rc = SR_ERR_OK;
     sr_val_t *val = NULL;
     struct lyd_node *node = NULL;
     unsigned int node_cnt = 1;
 
-    rc = rp_dt_find_node(dm_ctx, data_tree, xpath, check_enabled, &node);
+    rc = rp_dt_find_node(dm_ctx, data_trees, data_tree_count, xpath, check_enabled, &node);
     if (SR_ERR_OK != rc) {
         if (SR_ERR_NOT_FOUND != rc) {
             SR_LOG_ERR("Find node failed (%d) xpath %s", rc, xpath);
@@ -195,7 +195,7 @@ rp_dt_get_value(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node *dat
         return rc;
     }
 
-    rc = rp_dt_nacm_filtering(dm_ctx, rp_session, data_tree, &node, &node_cnt);
+    rc = rp_dt_nacm_filtering(dm_ctx, rp_session, &node, &node_cnt);
     CHECK_RC_MSG_RETURN(rc, "Failed to filter node by NACM read access.");
     if (0 == node_cnt) {
         return SR_ERR_NOT_FOUND;
@@ -221,15 +221,15 @@ rp_dt_get_value(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node *dat
 }
 
 int
-rp_dt_get_values(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node *data_tree, sr_mem_ctx_t *sr_mem,
-        const char *xpath, bool check_enable, sr_val_t **values, size_t *count)
+rp_dt_get_values(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node **data_trees, size_t data_tree_count,
+        sr_mem_ctx_t *sr_mem, const char *xpath, bool check_enable, sr_val_t **values, size_t *count)
 {
-    CHECK_NULL_ARG5(dm_ctx, data_tree, xpath, values, count);
+    CHECK_NULL_ARG4(dm_ctx, xpath, values, count);
 
     int rc = SR_ERR_OK;
     struct ly_set *nodes = NULL;
 
-    rc = rp_dt_find_nodes(dm_ctx, data_tree, xpath, check_enable, &nodes);
+    rc = rp_dt_find_nodes(dm_ctx, data_trees, data_tree_count, xpath, check_enable, &nodes);
     if (SR_ERR_OK != rc) {
         if (SR_ERR_NOT_FOUND != rc) {
             SR_LOG_ERR("Get nodes for xpath %s failed (%d)", xpath, rc);
@@ -237,7 +237,7 @@ rp_dt_get_values(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node *da
         goto cleanup;
     }
 
-    rc = rp_dt_nacm_filtering(dm_ctx, rp_session, data_tree, nodes->set.d, &nodes->number);
+    rc = rp_dt_nacm_filtering(dm_ctx, rp_session, nodes->set.d, &nodes->number);
     CHECK_RC_MSG_GOTO(rc, cleanup, "Failed to filter nodes by NACM read access.");
     if (0 == nodes->number) {
         rc = SR_ERR_NOT_FOUND;
@@ -257,17 +257,17 @@ cleanup:
 }
 
 int
-rp_dt_get_subtree(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node *data_tree, sr_mem_ctx_t *sr_mem,
-        const char *xpath, bool check_enabled, sr_node_t **subtree)
+rp_dt_get_subtree(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node **data_trees, size_t data_tree_count,
+        sr_mem_ctx_t *sr_mem, const char *xpath, bool check_enabled, sr_node_t **subtree)
 {
-    CHECK_NULL_ARG4(dm_ctx, data_tree, xpath, subtree);
+    CHECK_NULL_ARG3(dm_ctx, xpath, subtree);
     int rc = SR_ERR_OK;
     sr_node_t *tree = NULL;
     struct lyd_node *node = NULL;
     sr_tree_pruning_cb pruning_cb = NULL;
     rp_tree_pruning_ctx_t *pruning_ctx = NULL;
 
-    rc = rp_dt_find_node(dm_ctx, data_tree, xpath, check_enabled, &node);
+    rc = rp_dt_find_node(dm_ctx, data_trees, data_tree_count, xpath, check_enabled, &node);
     if (SR_ERR_OK != rc) {
         if (SR_ERR_NOT_FOUND != rc) {
             SR_LOG_ERR("Find node failed (%d) xpath %s", rc, xpath);
@@ -275,7 +275,7 @@ rp_dt_get_subtree(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node *d
         return rc;
     }
 
-    rc = rp_dt_init_tree_pruning(dm_ctx, rp_session, node, data_tree, check_enabled, &pruning_cb, &pruning_ctx);
+    rc = rp_dt_init_tree_pruning(dm_ctx, rp_session, node, node->schema, check_enabled, &pruning_cb, &pruning_ctx);
     if (SR_ERR_UNAUTHORIZED == rc) {
         rc = SR_ERR_NOT_FOUND;
         goto cleanup;
@@ -305,11 +305,11 @@ cleanup:
 }
 
 int
-rp_dt_get_subtree_chunk(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node *data_tree, sr_mem_ctx_t *sr_mem,
-        const char *xpath, size_t slice_offset, size_t slice_width, size_t child_limit, size_t depth_limit,
+rp_dt_get_subtree_chunk(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node **data_trees, size_t data_tree_count,
+        sr_mem_ctx_t *sr_mem, const char *xpath, size_t slice_offset, size_t slice_width, size_t child_limit, size_t depth_limit,
         bool check_enabled, sr_node_t **chunk, char **chunk_id)
 {
-    CHECK_NULL_ARG5(dm_ctx, data_tree, xpath, chunk, chunk_id);
+    CHECK_NULL_ARG4(dm_ctx, xpath, chunk, chunk_id);
     int rc = SR_ERR_OK;
     sr_node_t *tree = NULL;
     char *id = NULL, *id_cpy = NULL;
@@ -317,7 +317,7 @@ rp_dt_get_subtree_chunk(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_n
     sr_tree_pruning_cb pruning_cb = NULL;
     rp_tree_pruning_ctx_t *pruning_ctx = NULL;
 
-    rc = rp_dt_find_node(dm_ctx, data_tree, xpath, check_enabled, &node);
+    rc = rp_dt_find_node(dm_ctx, data_trees, data_tree_count, xpath, check_enabled, &node);
     if (SR_ERR_OK != rc) {
         if (SR_ERR_NOT_FOUND != rc) {
             SR_LOG_ERR("Find node failed (%d) xpath %s", rc, xpath);
@@ -325,7 +325,7 @@ rp_dt_get_subtree_chunk(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_n
         return rc;
     }
 
-    rc = rp_dt_init_tree_pruning(dm_ctx, rp_session, node, data_tree, check_enabled, &pruning_cb, &pruning_ctx);
+    rc = rp_dt_init_tree_pruning(dm_ctx, rp_session, node, node->schema, check_enabled, &pruning_cb, &pruning_ctx);
     if (SR_ERR_UNAUTHORIZED == rc) {
         rc = SR_ERR_NOT_FOUND;
         goto cleanup;
@@ -368,8 +368,8 @@ cleanup:
 }
 
 int
-rp_dt_get_subtrees(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node *data_tree, sr_mem_ctx_t *sr_mem,
-        const char *xpath, bool check_enable, sr_node_t **subtrees, size_t *count)
+rp_dt_get_subtrees(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node *data_tree,
+        sr_mem_ctx_t *sr_mem, const char *xpath, bool check_enable, sr_node_t **subtrees, size_t *count)
 {
     CHECK_NULL_ARG5(dm_ctx, data_tree, xpath, subtrees, count);
     int rc = SR_ERR_OK;
@@ -377,7 +377,7 @@ rp_dt_get_subtrees(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node *
     sr_tree_pruning_cb pruning_cb = NULL;
     rp_tree_pruning_ctx_t *pruning_ctx = NULL;
 
-    rc = rp_dt_find_nodes(dm_ctx, data_tree, xpath, check_enable, &nodes);
+    rc = rp_dt_find_nodes(dm_ctx, &data_tree, 1, xpath, check_enable, &nodes);
     if (SR_ERR_OK != rc) {
         if (SR_ERR_NOT_FOUND != rc) {
             SR_LOG_ERR("Get nodes for xpath %s failed (%d)", xpath, rc);
@@ -385,7 +385,7 @@ rp_dt_get_subtrees(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node *
         return rc;
     }
 
-    rc = rp_dt_init_tree_pruning(dm_ctx, rp_session, NULL, data_tree, check_enable, &pruning_cb, &pruning_ctx);
+    rc = rp_dt_init_tree_pruning(dm_ctx, rp_session, NULL, data_tree->schema, check_enable, &pruning_cb, &pruning_ctx);
     CHECK_RC_MSG_GOTO(rc, cleanup, "Failed to initialize sysrepo tree pruning.");
 
     rc = sr_nodes_to_trees(nodes, sr_mem, pruning_cb, (void *)pruning_ctx, subtrees, count);
@@ -420,7 +420,7 @@ rp_dt_get_subtrees_chunks(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd
     sr_tree_pruning_cb pruning_cb = NULL;
     rp_tree_pruning_ctx_t *pruning_ctx = NULL;
 
-    rc = rp_dt_find_nodes(dm_ctx, data_tree, xpath, check_enable, &nodes);
+    rc = rp_dt_find_nodes(dm_ctx, &data_tree, 1, xpath, check_enable, &nodes);
     if (SR_ERR_OK != rc) {
         if (SR_ERR_NOT_FOUND != rc) {
             SR_LOG_ERR("Get nodes for xpath %s failed (%d)", xpath, rc);
@@ -428,7 +428,7 @@ rp_dt_get_subtrees_chunks(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd
         return rc;
     }
 
-    rc = rp_dt_init_tree_pruning(dm_ctx, rp_session, NULL, data_tree, check_enable, &pruning_cb, &pruning_ctx);
+    rc = rp_dt_init_tree_pruning(dm_ctx, rp_session, NULL, data_tree->schema, check_enable, &pruning_cb, &pruning_ctx);
     CHECK_RC_MSG_GOTO(rc, cleanup, "Failed to initialize sysrepo tree pruning.");
 
     rc = sr_nodes_to_tree_chunks(nodes, slice_offset, slice_width, child_limit, depth_limit, sr_mem,
@@ -652,7 +652,8 @@ rp_dt_no_parent_list_until(struct lys_node *until, struct lys_node *node)
 }
 
 static bool
-rp_dt_not_coverd_by_other_subs(sr_list_t *other, struct lys_node *node) {
+rp_dt_not_coverd_by_other_subs(sr_list_t *other, struct lys_node *node)
+{
     if (NULL == other || NULL == node) {
         return true;
     }
@@ -668,6 +669,7 @@ rp_dt_not_coverd_by_other_subs(sr_list_t *other, struct lys_node *node) {
 
     return true;
 }
+
 /**
  * @brief Determines if (and what) state data subtrees are needed to be loaded.
  */
@@ -1186,12 +1188,16 @@ rp_dt_remove_loaded_state_data(rp_ctx_t *rp_ctx, rp_session_t *rp_session)
  */
 static int
 rp_dt_prepare_data(rp_ctx_t *rp_ctx, rp_session_t *rp_session, const char *xpath, sr_api_variant_t api_variant,
-        size_t tree_depth_limit,  struct lyd_node **data_tree)
+        size_t tree_depth_limit, struct lyd_node ***data_trees, size_t *data_tree_count)
 {
-    CHECK_NULL_ARG4(rp_ctx, rp_session, xpath, data_tree);
+    CHECK_NULL_ARG4(rp_ctx, rp_session, xpath, data_trees);
     int rc = SR_ERR_OK;
     bool has_state_data = false;
+    char **ns = NULL;
+    size_t ns_count = 0, i = 0;
     dm_data_info_t *data_info = NULL;
+
+    *data_trees = NULL;
 
     if (RP_REQ_NEW == rp_session->state) {
 
@@ -1200,56 +1206,74 @@ rp_dt_prepare_data(rp_ctx_t *rp_ctx, rp_session_t *rp_session, const char *xpath
         free(rp_session->module_name);
         rp_session->module_name = NULL;
 
-        rc = rp_dt_remove_loaded_state_data(rp_ctx, rp_session);
-        CHECK_RC_MSG_GOTO(rc, cleanup, "Failed to remove state data from data tree");
-
-        rc = sr_copy_first_ns(xpath, &rp_session->module_name);
-        CHECK_RC_LOG_GOTO(rc, cleanup, "Copying module name failed for xpath '%s'", xpath);
+        rc = sr_copy_all_ns(xpath, &ns, &ns_count);
+        CHECK_RC_LOG_GOTO(rc, cleanup, "Getting module names failed for xpath '%s'", xpath);
 
         rc = ac_check_node_permissions(rp_session->ac_session, xpath, AC_OPER_READ);
         CHECK_RC_LOG_GOTO(rc, cleanup, "Access control check failed for xpath '%s'", xpath);
 
-        rc = dm_get_data_info(rp_ctx->dm_ctx, rp_session->dm_session, rp_session->module_name, &data_info);
+        rc = rp_dt_remove_loaded_state_data(rp_ctx, rp_session);
+        CHECK_RC_MSG_GOTO(rc, cleanup, "Failed to remove state data from data tree");
 
-        /* check of data tree's emptiness is performed outside of this function -> ignore SR_ERR_NOT_FOUND */
-        rc = SR_ERR_NOT_FOUND == rc ? SR_ERR_OK : rc;
-        CHECK_RC_LOG_GOTO(rc, cleanup, "Getting data tree failed (%d) for xpath '%s'", rc, xpath);
-        *data_tree = data_info->node;
-
-        /* if the request requires operational data pause the processing and wait for data to be provided */
-        if ((SR_DS_RUNNING == rp_session->datastore || SR_DS_CANDIDATE == rp_session->datastore) &&
-            (!(SR_SESS_CONFIG_ONLY & rp_session->options)) &&
-            (!(SR__SESSION_FLAGS__SESS_NOTIFICATION & rp_session->options)) &&
-            (SR_ERR_OK == dm_has_state_data(rp_ctx->dm_ctx, rp_session->module_name, &has_state_data) && has_state_data)) {
-
-            rp_dt_free_state_data_ctx_content(&rp_session->state_data_ctx);
-            rp_session->dp_req_waiting = 0;
-
-            rc = sr_list_init(&rp_session->state_data_ctx.requested_xpaths);
-            CHECK_RC_MSG_GOTO(rc, cleanup, "List init failed");
-
-            rc = rp_dt_xpath_requests_state_data(rp_ctx, rp_session, data_info->schema, xpath, api_variant,
-                    tree_depth_limit, &rp_session->state_data_ctx);
-            CHECK_RC_MSG_GOTO(rc, cleanup, "rp_dt_xpath_requests_state_data failed");
-
-            if (NULL == rp_session->state_data_ctx.subtrees || 0 == rp_session->state_data_ctx.subtrees->count) {
-                SR_LOG_DBG("No state state data provider is asked for data because of xpath %s", xpath);
-                goto cleanup;
-            }
-
-            rc = rp_dt_send_first_set_of_dp_requests(rp_ctx, rp_session);
-            CHECK_RC_LOG_GOTO(rc, cleanup, "Failed to send requests for xpath %s", xpath);
-
-            if (rp_session->dp_req_waiting > 0) {
-                rp_session->state = RP_REQ_WAITING_FOR_DATA;
-            }
-
+        *data_trees = calloc(ns_count, sizeof **data_trees);
+        if (ns_count == 1) {
+            rp_session->module_name = strdup(ns[0]);
         }
-        CHECK_RC_MSG_GOTO(rc, cleanup, "rp_dt_module_has_state data failed");
+
+        for (i = 0; i < ns_count; ++i) {
+            rc = dm_get_data_info(rp_ctx->dm_ctx, rp_session->dm_session, ns[i], &data_info);
+
+            /* check of data tree's emptiness is performed outside of this function -> ignore SR_ERR_NOT_FOUND */
+            rc = SR_ERR_NOT_FOUND == rc ? SR_ERR_OK : rc;
+            CHECK_RC_LOG_GOTO(rc, cleanup, "Getting data tree failed (%d) for module '%s'", rc, ns[i]);
+            if (NULL != data_info->node) {
+                (*data_trees)[*data_tree_count] = data_info->node;
+                ++(*data_tree_count);
+            }
+
+            /* if the request requires operational data pause the processing and wait for data to be provided */
+            if ((SR_DS_RUNNING == rp_session->datastore || SR_DS_CANDIDATE == rp_session->datastore) &&
+                (!(SR_SESS_CONFIG_ONLY & rp_session->options)) &&
+                (!(SR__SESSION_FLAGS__SESS_NOTIFICATION & rp_session->options)) &&
+                (SR_ERR_OK == dm_has_state_data(rp_ctx->dm_ctx, ns[i], &has_state_data) && has_state_data)) {
+
+                rp_dt_free_state_data_ctx_content(&rp_session->state_data_ctx);
+                rp_session->dp_req_waiting = 0;
+
+                rc = sr_list_init(&rp_session->state_data_ctx.requested_xpaths);
+                CHECK_RC_MSG_GOTO(rc, cleanup, "List init failed");
+
+                rc = rp_dt_xpath_requests_state_data(rp_ctx, rp_session, data_info->schema, xpath, api_variant,
+                        tree_depth_limit, &rp_session->state_data_ctx);
+                CHECK_RC_MSG_GOTO(rc, cleanup, "rp_dt_xpath_requests_state_data failed");
+
+                if (NULL == rp_session->state_data_ctx.subtrees || 0 == rp_session->state_data_ctx.subtrees->count) {
+                    SR_LOG_DBG("No state data provider is asked for data because of xpath %s", xpath);
+                    continue;
+                }
+
+                /* there is no way of storing the partial result */
+                if (ns_count > 1) {
+                    SR_LOG_ERR_MSG("Cannot retrieve state data and data from several modules together");
+                    rc = SR_ERR_UNSUPPORTED;
+                    goto cleanup;
+                }
+
+                rc = rp_dt_send_first_set_of_dp_requests(rp_ctx, rp_session);
+                CHECK_RC_LOG_GOTO(rc, cleanup, "Failed to send requests for xpath %s", xpath);
+
+                if (rp_session->dp_req_waiting > 0) {
+                    rp_session->state = RP_REQ_WAITING_FOR_DATA;
+                }
+
+            }
+        }
 
     } else if (RP_REQ_DATA_LOADED == rp_session->state) {
         SR_LOG_DBG("Session id = %u data loaded, continue processing", rp_session->id);
-        rc = dm_get_datatree(rp_ctx->dm_ctx, rp_session->dm_session, rp_session->module_name, data_tree);
+        *data_trees = malloc(sizeof **data_trees);
+        *data_tree_count = 1;
+        rc = dm_get_datatree(rp_ctx->dm_ctx, rp_session->dm_session, rp_session->module_name, *data_trees);
         /* check of data tree's emptiness is performed outside of this function -> ignore SR_ERR_NOT_FOUND */
         rc = SR_ERR_NOT_FOUND == rc ? SR_ERR_OK : rc;
     } else {
@@ -1261,7 +1285,17 @@ cleanup:
     if (SR_ERR_OK != rc) {
         rp_dt_free_state_data_ctx_content(&rp_session->state_data_ctx);
         rp_session->dp_req_waiting = 0;
+        free(*data_trees);
+        *data_trees = NULL;
+        *data_tree_count = 0;
+    } else if (!*data_tree_count || rp_session->state == RP_REQ_WAITING_FOR_DATA) {
+        free(*data_trees);
+        *data_trees = NULL;
     }
+    for (i = 0; i < ns_count; ++i) {
+        free(ns[i]);
+    }
+    free(ns);
     return rc;
 }
 
@@ -1273,9 +1307,10 @@ rp_dt_get_value_wrapper(rp_ctx_t *rp_ctx, rp_session_t *rp_session, sr_mem_ctx_t
     SR_LOG_INF("Get item request %s datastore, xpath: %s", sr_ds_to_str(rp_session->datastore), xpath);
 
     int rc = SR_ERR_OK;
-    struct lyd_node *data_tree = NULL;
+    struct lyd_node **data_trees = NULL;
+    size_t data_tree_count = 0;
 
-    rc = rp_dt_prepare_data(rp_ctx, rp_session, xpath, SR_API_VALUES, 0, &data_tree);
+    rc = rp_dt_prepare_data(rp_ctx, rp_session, xpath, SR_API_VALUES, 0, &data_trees, &data_tree_count);
     CHECK_RC_LOG_GOTO(rc, cleanup, "rp_dt_prepare_data failed %s", sr_strerror(rc));
 
     if (RP_REQ_WAITING_FOR_DATA == rp_session->state) {
@@ -1283,12 +1318,12 @@ rp_dt_get_value_wrapper(rp_ctx_t *rp_ctx, rp_session_t *rp_session, sr_mem_ctx_t
         return rc;
     }
 
-    if (NULL == data_tree) {
+    if (0 == data_tree_count) {
         rc = SR_ERR_NOT_FOUND;
         goto cleanup;
     }
 
-    rc = rp_dt_get_value(rp_ctx->dm_ctx, rp_session, data_tree, sr_mem, xpath,
+    rc = rp_dt_get_value(rp_ctx->dm_ctx, rp_session, data_trees, data_tree_count, sr_mem, xpath,
             dm_is_running_ds_session(rp_session->dm_session), value);
     if (SR_ERR_UNAUTHORIZED == rc) {
         rc = SR_ERR_NOT_FOUND;
@@ -1300,6 +1335,7 @@ cleanup:
     rp_session->state = RP_REQ_FINISHED;
     free(rp_session->module_name);
     rp_session->module_name = NULL;
+    free(data_trees);
     return rc;
 }
 
@@ -1312,9 +1348,10 @@ rp_dt_get_values_wrapper(rp_ctx_t *rp_ctx, rp_session_t *rp_session, sr_mem_ctx_
     SR_LOG_INF("Get items request %s datastore, xpath: %s", sr_ds_to_str(rp_session->datastore), xpath);
 
     int rc = SR_ERR_OK;
-    struct lyd_node *data_tree = NULL;
+    struct lyd_node **data_trees = NULL;
+    size_t data_tree_count = 0;
 
-    rc = rp_dt_prepare_data(rp_ctx, rp_session, xpath, SR_API_VALUES, 0, &data_tree);
+    rc = rp_dt_prepare_data(rp_ctx, rp_session, xpath, SR_API_VALUES, 0, &data_trees, &data_tree_count);
     CHECK_RC_MSG_GOTO(rc, cleanup, "rp_dt_prepare_data failed");
 
     if (RP_REQ_WAITING_FOR_DATA == rp_session->state) {
@@ -1322,12 +1359,12 @@ rp_dt_get_values_wrapper(rp_ctx_t *rp_ctx, rp_session_t *rp_session, sr_mem_ctx_
         return rc;
     }
 
-    if (NULL == data_tree) {
+    if (0 == data_tree_count) {
         rc = SR_ERR_NOT_FOUND;
         goto cleanup;
     }
 
-    rc = rp_dt_get_values(rp_ctx->dm_ctx, rp_session, data_tree, sr_mem, xpath,
+    rc = rp_dt_get_values(rp_ctx->dm_ctx, rp_session, data_trees, data_tree_count, sr_mem, xpath,
             dm_is_running_ds_session(rp_session->dm_session), values, count);
     if (SR_ERR_UNAUTHORIZED == rc) {
         rc = SR_ERR_NOT_FOUND;
@@ -1339,6 +1376,7 @@ cleanup:
     rp_session->state = RP_REQ_FINISHED;
     free(rp_session->module_name);
     rp_session->module_name = NULL;
+    free(data_trees);
     return rc;
 }
 
@@ -1351,7 +1389,8 @@ rp_dt_get_values_wrapper_with_opts(rp_ctx_t *rp_ctx, rp_session_t *rp_session, r
     SR_LOG_INF("Get items request %s datastore, xpath: %s, offset: %zu, limit: %zu", sr_ds_to_str(rp_session->datastore), xpath, offset, limit);
 
     int rc = SR_ERR_OK;
-    struct lyd_node *data_tree = NULL;
+    struct lyd_node **data_trees = NULL;
+    size_t data_tree_count = 0;
     struct ly_set *nodes = NULL;
 
     if (get_items_ctx->xpath != NULL && 0 == strcmp(xpath, get_items_ctx->xpath) &&
@@ -1360,7 +1399,7 @@ rp_dt_get_values_wrapper_with_opts(rp_ctx_t *rp_ctx, rp_session_t *rp_session, r
         rp_session->state = RP_REQ_DATA_LOADED;
     }
 
-    rc = rp_dt_prepare_data(rp_ctx, rp_session, xpath, SR_API_VALUES, 0, &data_tree);
+    rc = rp_dt_prepare_data(rp_ctx, rp_session, xpath, SR_API_VALUES, 0, &data_trees, &data_tree_count);
     CHECK_RC_MSG_GOTO(rc, cleanup, "rp_dt_prepare_data failed");
 
     if (RP_REQ_WAITING_FOR_DATA == rp_session->state) {
@@ -1368,12 +1407,12 @@ rp_dt_get_values_wrapper_with_opts(rp_ctx_t *rp_ctx, rp_session_t *rp_session, r
         return rc;
     }
 
-    if (NULL == data_tree) {
+    if (0 == data_tree_count) {
         rc = SR_ERR_NOT_FOUND;
         goto cleanup;
     }
 
-    rc = rp_dt_find_nodes_with_opts(rp_ctx->dm_ctx, rp_session, get_items_ctx, data_tree, xpath, offset, limit, &nodes);
+    rc = rp_dt_find_nodes_with_opts(rp_ctx->dm_ctx, rp_session, get_items_ctx, data_trees, data_tree_count, xpath, offset, limit, &nodes);
     if (SR_ERR_OK != rc) {
         if (SR_ERR_UNAUTHORIZED == rc) {
             rc = SR_ERR_NOT_FOUND;
@@ -1391,6 +1430,7 @@ rp_dt_get_values_wrapper_with_opts(rp_ctx_t *rp_ctx, rp_session_t *rp_session, r
 cleanup:
     ly_set_free(nodes);
     rp_session->state = RP_REQ_FINISHED;
+    free(data_trees);
     return rc;
 }
 
@@ -1402,9 +1442,10 @@ rp_dt_get_subtree_wrapper(rp_ctx_t *rp_ctx, rp_session_t *rp_session, sr_mem_ctx
     SR_LOG_INF("Get subtree request %s datastore, xpath: %s", sr_ds_to_str(rp_session->datastore), xpath);
 
     int rc = SR_ERR_OK;
-    struct lyd_node *data_tree = NULL;
+    struct lyd_node **data_trees = NULL;
+    size_t data_tree_count = 0;
 
-    rc = rp_dt_prepare_data(rp_ctx, rp_session, xpath, SR_API_TREES, SIZE_MAX, &data_tree);
+    rc = rp_dt_prepare_data(rp_ctx, rp_session, xpath, SR_API_TREES, SIZE_MAX, &data_trees, &data_tree_count);
     CHECK_RC_LOG_GOTO(rc, cleanup, "rp_dt_prepare_data failed %s", sr_strerror(rc));
 
     if (RP_REQ_WAITING_FOR_DATA == rp_session->state) {
@@ -1412,12 +1453,12 @@ rp_dt_get_subtree_wrapper(rp_ctx_t *rp_ctx, rp_session_t *rp_session, sr_mem_ctx
         return rc;
     }
 
-    if (NULL == data_tree) {
+    if (0 == data_tree_count) {
         rc = SR_ERR_NOT_FOUND;
         goto cleanup;
     }
 
-    rc = rp_dt_get_subtree(rp_ctx->dm_ctx, rp_session, data_tree, sr_mem, xpath,
+    rc = rp_dt_get_subtree(rp_ctx->dm_ctx, rp_session, data_trees, data_tree_count, sr_mem, xpath,
             dm_is_running_ds_session(rp_session->dm_session), subtree);
     if (SR_ERR_UNAUTHORIZED == rc) {
         rc = SR_ERR_NOT_FOUND;
@@ -1428,6 +1469,7 @@ cleanup:
     rp_session->state = RP_REQ_FINISHED;
     free(rp_session->module_name);
     rp_session->module_name = NULL;
+    free(data_trees);
     return rc;
 }
 
@@ -1440,9 +1482,10 @@ rp_dt_get_subtree_wrapper_with_opts(rp_ctx_t *rp_ctx, rp_session_t *rp_session, 
     SR_LOG_INF("Get subtree request %s datastore, xpath: %s", sr_ds_to_str(rp_session->datastore), xpath);
 
     int rc = SR_ERR_OK;
-    struct lyd_node *data_tree = NULL;
+    struct lyd_node **data_trees = NULL;
+    size_t data_tree_count = 0;
 
-    rc = rp_dt_prepare_data(rp_ctx, rp_session, xpath, SR_API_TREES, depth_limit, &data_tree);
+    rc = rp_dt_prepare_data(rp_ctx, rp_session, xpath, SR_API_TREES, depth_limit, &data_trees, &data_tree_count);
     CHECK_RC_LOG_GOTO(rc, cleanup, "rp_dt_prepare_data failed %s", sr_strerror(rc));
 
     if (RP_REQ_WAITING_FOR_DATA == rp_session->state) {
@@ -1450,13 +1493,13 @@ rp_dt_get_subtree_wrapper_with_opts(rp_ctx_t *rp_ctx, rp_session_t *rp_session, 
         return rc;
     }
 
-    if (NULL == data_tree) {
+    if (0 == data_tree_count) {
         rc = SR_ERR_NOT_FOUND;
         goto cleanup;
     }
 
-    rc = rp_dt_get_subtree_chunk(rp_ctx->dm_ctx, rp_session, data_tree, sr_mem, xpath, slice_offset, slice_width,
-            child_limit, depth_limit, dm_is_running_ds_session(rp_session->dm_session), subtree, subtree_id);
+    rc = rp_dt_get_subtree_chunk(rp_ctx->dm_ctx, rp_session, data_trees, data_tree_count, sr_mem, xpath, slice_offset,
+            slice_width, child_limit, depth_limit, dm_is_running_ds_session(rp_session->dm_session), subtree, subtree_id);
     if (SR_ERR_UNAUTHORIZED == rc) {
         rc = SR_ERR_NOT_FOUND;
     } else if (SR_ERR_OK != rc) {
@@ -1467,6 +1510,7 @@ cleanup:
     rp_session->state = RP_REQ_FINISHED;
     free(rp_session->module_name);
     rp_session->module_name = NULL;
+    free(data_trees);
     return rc;
 }
 
@@ -1478,22 +1522,28 @@ rp_dt_get_subtrees_wrapper(rp_ctx_t *rp_ctx, rp_session_t *rp_session, sr_mem_ct
     SR_LOG_INF("Get subtrees request %s datastore, xpath: %s", sr_ds_to_str(rp_session->datastore), xpath);
 
     int rc = SR_ERR_OK;
-    struct lyd_node *data_tree = NULL;
+    struct lyd_node **data_trees = NULL;
+    size_t data_tree_count = 0;
 
-    rc = rp_dt_prepare_data(rp_ctx, rp_session, xpath, SR_API_TREES, SIZE_MAX, &data_tree);
+    rc = rp_dt_prepare_data(rp_ctx, rp_session, xpath, SR_API_TREES, SIZE_MAX, &data_trees, &data_tree_count);
     CHECK_RC_MSG_GOTO(rc, cleanup, "rp_dt_prepare_data failed");
+    if (data_tree_count > 1) {
+        SR_LOG_ERR_MSG("Getting subtrees from different modules is not supported");
+        rc = SR_ERR_UNSUPPORTED;
+        goto cleanup;
+    }
 
     if (RP_REQ_WAITING_FOR_DATA == rp_session->state) {
         SR_LOG_DBG("Session id = %u is waiting for the data", rp_session->id);
         return rc;
     }
 
-    if (NULL == data_tree) {
+    if (0 == data_tree_count) {
         rc = SR_ERR_NOT_FOUND;
         goto cleanup;
     }
 
-    rc = rp_dt_get_subtrees(rp_ctx->dm_ctx, rp_session, data_tree, sr_mem, xpath,
+    rc = rp_dt_get_subtrees(rp_ctx->dm_ctx, rp_session, data_trees[0], sr_mem, xpath,
                             dm_is_running_ds_session(rp_session->dm_session), subtrees, count);
     if (SR_ERR_UNAUTHORIZED == rc) {
         rc = SR_ERR_NOT_FOUND;
@@ -1505,6 +1555,7 @@ cleanup:
     rp_session->state = RP_REQ_FINISHED;
     free(rp_session->module_name);
     rp_session->module_name = NULL;
+    free(data_trees);
     return rc;
 }
 
@@ -1518,22 +1569,28 @@ rp_dt_get_subtrees_wrapper_with_opts(rp_ctx_t *rp_ctx, rp_session_t *rp_session,
     SR_LOG_INF("Get subtrees request %s datastore, xpath: %s", sr_ds_to_str(rp_session->datastore), xpath);
 
     int rc = SR_ERR_OK;
-    struct lyd_node *data_tree = NULL;
+    struct lyd_node **data_trees = NULL;
+    size_t data_tree_count = 0;
 
-    rc = rp_dt_prepare_data(rp_ctx, rp_session, xpath, SR_API_TREES, depth_limit, &data_tree);
+    rc = rp_dt_prepare_data(rp_ctx, rp_session, xpath, SR_API_TREES, depth_limit, &data_trees, &data_tree_count);
     CHECK_RC_MSG_GOTO(rc, cleanup, "rp_dt_prepare_data failed");
+    if (data_tree_count > 1) {
+        SR_LOG_ERR_MSG("Getting subtrees from different modules is not supported");
+        rc = SR_ERR_UNSUPPORTED;
+        goto cleanup;
+    }
 
     if (RP_REQ_WAITING_FOR_DATA == rp_session->state) {
         SR_LOG_DBG("Session id = %u is waiting for the data", rp_session->id);
         return rc;
     }
 
-    if (NULL == data_tree) {
+    if (0 == data_tree_count) {
         rc = SR_ERR_NOT_FOUND;
         goto cleanup;
     }
 
-    rc = rp_dt_get_subtrees_chunks(rp_ctx->dm_ctx, rp_session, data_tree, sr_mem, xpath, slice_offset, slice_width,
+    rc = rp_dt_get_subtrees_chunks(rp_ctx->dm_ctx, rp_session, data_trees[0], sr_mem, xpath, slice_offset, slice_width,
             child_limit, depth_limit, dm_is_running_ds_session(rp_session->dm_session), subtrees, count, subtree_ids);
     if (SR_ERR_UNAUTHORIZED == rc) {
         rc = SR_ERR_NOT_FOUND;
@@ -1545,6 +1602,7 @@ cleanup:
     rp_session->state = RP_REQ_FINISHED;
     free(rp_session->module_name);
     rp_session->module_name = NULL;
+    free(data_trees);
     return rc;
 }
 

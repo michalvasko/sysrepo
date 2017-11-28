@@ -27,8 +27,7 @@
 
 
 int
-rp_dt_nacm_filtering(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node *data_tree,
-        struct lyd_node **nodes, unsigned int *node_cnt)
+rp_dt_nacm_filtering(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node **nodes, unsigned int *node_cnt)
 {
     int rc = SR_ERR_OK;
     unsigned int i = 0, j = 0;
@@ -37,6 +36,7 @@ rp_dt_nacm_filtering(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node
     nacm_action_t nacm_action = NACM_ACTION_PERMIT;
     const char *rule_name = NULL, *rule_info = NULL;
     struct lyd_node *node = NULL;
+    struct lys_module *cur_module = NULL;
     CHECK_NULL_ARG4(dm_ctx, rp_session, nodes, node_cnt);
 
     rc = dm_get_nacm_ctx(dm_ctx, &nacm_ctx);
@@ -46,13 +46,22 @@ rp_dt_nacm_filtering(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node
         goto cleanup;
     }
 
-    /* start NACM data access validation */
-    rc = nacm_data_validation_start(nacm_ctx, rp_session->user_credentials, data_tree->schema, &nacm_data_val_ctx);
-    CHECK_RC_MSG_GOTO(rc, cleanup, "Failed to start NACM data validation.");
-
     /* check read permission for each node */
     for (i = 0; i < *node_cnt; ++i) {
         node = nodes[i];
+
+        if (cur_module != lyd_node_module(node)) {
+            cur_module = lyd_node_module(node);
+            if (NULL != nacm_data_val_ctx) {
+                /* end previous validation */
+                nacm_data_validation_stop(nacm_data_val_ctx);
+            }
+
+            /* start new NACM data access validation */
+            rc = nacm_data_validation_start(nacm_ctx, rp_session->user_credentials, cur_module, &nacm_data_val_ctx);
+            CHECK_RC_MSG_GOTO(rc, cleanup, "Failed to start NACM data validation.");
+        }
+
         rule_name = rule_info = NULL;
         rc = nacm_check_data(nacm_data_val_ctx, NACM_ACCESS_READ, node, &nacm_action, &rule_name, &rule_info);
         CHECK_RC_LOG_GOTO(rc, cleanup, "NACM data validation failed for node: %s.", node->schema->name);
@@ -133,12 +142,12 @@ rp_dt_cleanup_tree_pruning(rp_tree_pruning_ctx_t *pruning_ctx)
 }
 
 int
-rp_dt_init_tree_pruning(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node *root, struct lyd_node *data_tree,
+rp_dt_init_tree_pruning(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node *root, struct lys_node *schema,
         bool check_enabled, sr_tree_pruning_cb *pruning_cb, rp_tree_pruning_ctx_t **pruning_ctx_p)
 {
     int rc = SR_ERR_OK;
     rp_tree_pruning_ctx_t *pruning_ctx = NULL;
-    CHECK_NULL_ARG5(dm_ctx, rp_session, data_tree, pruning_cb, pruning_ctx_p);
+    CHECK_NULL_ARG4(dm_ctx, rp_session, pruning_cb, pruning_ctx_p);
 
     pruning_ctx = calloc(1, sizeof *pruning_ctx);
     CHECK_NULL_NOMEM_RETURN(pruning_ctx);
@@ -152,7 +161,7 @@ rp_dt_init_tree_pruning(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_n
     CHECK_RC_MSG_GOTO(rc, cleanup, "Failed to get NACM context.");
 
     if (NULL != nacm_ctx && (rp_session->options & SR_SESS_ENABLE_NACM)) {
-        rc = nacm_data_validation_start(nacm_ctx, rp_session->user_credentials, data_tree->schema,
+        rc = nacm_data_validation_start(nacm_ctx, rp_session->user_credentials, lys_node_module(schema),
                 &pruning_ctx->nacm_data_val_ctx);
         CHECK_RC_MSG_GOTO(rc, cleanup, "Failed to start NACM data validation.");
         if (NULL != root) {

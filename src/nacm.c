@@ -1395,7 +1395,7 @@ nacm_free_data_val_ctx(nacm_data_val_ctx_t *nacm_data_val_ctx)
 }
 
 int
-nacm_data_validation_start(nacm_ctx_t* nacm_ctx, const ac_ucred_t *user_credentials, struct lys_node *dt_schema,
+nacm_data_validation_start(nacm_ctx_t* nacm_ctx, const ac_ucred_t *user_credentials, struct lys_module *dt_module,
         nacm_data_val_ctx_t **nacm_data_val_ctx_p)
 {
     int rc = SR_ERR_OK;
@@ -1404,20 +1404,17 @@ nacm_data_validation_start(nacm_ctx_t* nacm_ctx, const ac_ucred_t *user_credenti
     bool disjoint = false, bit_val = false;
     char **ext_groups = NULL;
     size_t ext_group_cnt = 0;
-    struct lys_submodule *sub = NULL;
     dm_schema_info_t *schema_info = NULL;
     nacm_user_t *nacm_user = NULL;
     nacm_group_t **nacm_ext_groups = NULL;
     nacm_rule_list_t *nacm_rule_list = NULL;
     nacm_data_val_ctx_t *nacm_data_val_ctx = NULL;
 
-    CHECK_NULL_ARG4(nacm_ctx, user_credentials, dt_schema, nacm_data_val_ctx_p);
-    CHECK_NULL_ARG2(dt_schema->module, dt_schema->module->name);
+    CHECK_NULL_ARG4(nacm_ctx, user_credentials, dt_module, nacm_data_val_ctx_p);
 
-    if (dt_schema->module->type) {
+    if (dt_module->type) {
         /* submodule */
-        sub = (struct lys_submodule *) dt_schema->module;
-        CHECK_NULL_ARG3(sub, sub->belongsto, sub->belongsto->name);
+        dt_module = lys_main_module(dt_module);
     }
 
     if (NULL != user_credentials->e_username) {
@@ -1436,7 +1433,7 @@ nacm_data_validation_start(nacm_ctx_t* nacm_ctx, const ac_ucred_t *user_credenti
     CHECK_NULL_NOMEM_GOTO(nacm_data_val_ctx, rc, cleanup);
 
     /* Lock schema info and NACM -- in this order! */
-    module_name = sub == NULL ? dt_schema->module->name : sub->belongsto->name;
+    module_name = dt_module->name;
     rc = dm_get_module_and_lock(nacm_ctx->dm_ctx, module_name, &schema_info);
     CHECK_RC_LOG_GOTO(rc, cleanup, "Get schema info failed for %s", module_name);
     pthread_rwlock_rdlock(&nacm_ctx->lock);

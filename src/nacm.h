@@ -258,10 +258,10 @@ int nacm_check_event_notif(nacm_ctx_t *nacm_ctx, const char *username, const cha
  *
  * @param [in] nacm_ctx NACM context.
  * @param [in] user_credentials User credentials.
- * @param [in] dt_schema Schema of the data tree whose nodes will be validated.
+ * @param [in] dt_module Module of the data tree whose nodes will be validated.
  * @param [out] nacm_data_val_ctx Returned context representing this request.
  */
-int nacm_data_validation_start(nacm_ctx_t* nacm_ctx, const ac_ucred_t *user_credentials, struct lys_node *dt_schema,
+int nacm_data_validation_start(nacm_ctx_t* nacm_ctx, const ac_ucred_t *user_credentials, struct lys_module *dt_module,
         nacm_data_val_ctx_t **nacm_data_val_ctx);
 
 /**

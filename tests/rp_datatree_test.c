@@ -379,7 +379,7 @@ void ietf_interfaces_test(void **state){
     size_t count = 0;
 
 #define INTERFACES "/ietf-interfaces:interfaces/*"
-    rc = rp_dt_get_values(dm_ctx, rp_session, root, NULL, INTERFACES, false, &values, &count);
+    rc = rp_dt_get_values(dm_ctx, rp_session, &root, 1, NULL, INTERFACES, false, &values, &count);
     assert_int_equal(SR_ERR_OK, rc);
     assert_int_equal(3, count);
     for (size_t i = 0; i < count; i++) {
@@ -389,7 +389,7 @@ void ietf_interfaces_test(void **state){
     sr_free_values(values, count);
 
 #define INTERFACE_ETH0 "/ietf-interfaces:interfaces/interface[name='eth0']"
-    rc = rp_dt_get_values(dm_ctx, rp_session, root, NULL, INTERFACE_ETH0, false, &values, &count);
+    rc = rp_dt_get_values(dm_ctx, rp_session, &root, 1, NULL, INTERFACE_ETH0, false, &values, &count);
     assert_int_equal(SR_ERR_OK, rc);
     check_ietf_interfaces_int_values(values, count);
     for (size_t i = 0; i < count; i++) {
@@ -399,7 +399,7 @@ void ietf_interfaces_test(void **state){
     sr_free_values(values, count);
 
 #define INTERFACE_ETH0_IPV4 "/ietf-interfaces:interfaces/interface[name='eth0']/ietf-ip:ipv4"
-    rc = rp_dt_get_values(dm_ctx, rp_session, root, NULL, INTERFACE_ETH0_IPV4, false, &values, &count);
+    rc = rp_dt_get_values(dm_ctx, rp_session, &root, 1, NULL, INTERFACE_ETH0_IPV4, false, &values, &count);
     assert_int_equal(SR_ERR_OK, rc);
     check_ietf_interfaces_ipv4_values(values, count);
     for (size_t i = 0; i < count; i++) {
@@ -409,7 +409,7 @@ void ietf_interfaces_test(void **state){
     sr_free_values(values, count);
 
 #define INTERFACE_ETH0_IPV4_IP "/ietf-interfaces:interfaces/interface[name='eth0']/ietf-ip:ipv4/address[ip='192.168.2.100']"
-    rc = rp_dt_get_values(dm_ctx, rp_session, root, NULL, INTERFACE_ETH0_IPV4_IP, false, &values, &count);
+    rc = rp_dt_get_values(dm_ctx, rp_session, &root, 1, NULL, INTERFACE_ETH0_IPV4_IP, false, &values, &count);
     assert_int_equal(SR_ERR_OK, rc);
     check_ietf_interfaces_addr_values(values, count);
     for (size_t i = 0; i < count; i++) {
@@ -448,53 +448,53 @@ void ietf_interfaces_tree_test(void **state){
     sr_free_trees(trees, count);
 
 #define INTERFACE_ETH0 "/ietf-interfaces:interfaces/interface[name='eth0']"
-    rc = rp_dt_get_subtree(dm_ctx, rp_session, root, NULL, INTERFACE_ETH0, false, &tree);
+    rc = rp_dt_get_subtree(dm_ctx, rp_session, &root, 1, NULL, INTERFACE_ETH0, false, &tree);
     assert_int_equal(SR_ERR_OK, rc);
     check_ietf_interfaces_int_tree(tree, 0);
     sr_free_tree(tree);
 
 #define INTERFACE_ETH1 "/ietf-interfaces:interfaces/interface[name='eth1']"
-    rc = rp_dt_get_subtree(dm_ctx, rp_session, root, NULL, INTERFACE_ETH1, false, &tree);
+    rc = rp_dt_get_subtree(dm_ctx, rp_session, &root, 1, NULL, INTERFACE_ETH1, false, &tree);
     assert_int_equal(SR_ERR_OK, rc);
     check_ietf_interfaces_int_tree(tree, 1);
     sr_free_tree(tree);
 
 #define INTERFACE_GIGAETH0 "/ietf-interfaces:interfaces/interface[name='gigaeth0']"
-    rc = rp_dt_get_subtree(dm_ctx, rp_session, root, NULL, INTERFACE_GIGAETH0, false, &tree);
+    rc = rp_dt_get_subtree(dm_ctx, rp_session, &root, 1, NULL, INTERFACE_GIGAETH0, false, &tree);
     assert_int_equal(SR_ERR_OK, rc);
     check_ietf_interfaces_int_tree(tree, 2);
     sr_free_tree(tree);
 
 #define INTERFACE_ETH0_IPV4 "/ietf-interfaces:interfaces/interface[name='eth0']/ietf-ip:ipv4"
-    rc = rp_dt_get_subtree(dm_ctx, rp_session, root, NULL, INTERFACE_ETH0_IPV4, false, &tree);
+    rc = rp_dt_get_subtree(dm_ctx, rp_session, &root, 1, NULL, INTERFACE_ETH0_IPV4, false, &tree);
     assert_int_equal(SR_ERR_OK, rc);
     check_ietf_interfaces_ipv4_tree(tree, 0, true);
     sr_free_tree(tree);
 
 #define INTERFACE_ETH1_IPV4 "/ietf-interfaces:interfaces/interface[name='eth1']/ietf-ip:ipv4"
-    rc = rp_dt_get_subtree(dm_ctx, rp_session, root, NULL, INTERFACE_ETH1_IPV4, false, &tree);
+    rc = rp_dt_get_subtree(dm_ctx, rp_session, &root, 1, NULL, INTERFACE_ETH1_IPV4, false, &tree);
     assert_int_equal(SR_ERR_OK, rc);
     check_ietf_interfaces_ipv4_tree(tree, 1, true);
     sr_free_tree(tree);
 
 #define INTERFACE_GIGAETH0_IPV4 "/ietf-interfaces:interfaces/interface[name='gigaeth0']/ietf-ip:ipv4"
-    rc = rp_dt_get_subtree(dm_ctx, rp_session, root, NULL, INTERFACE_GIGAETH0_IPV4, false, &tree);
+    rc = rp_dt_get_subtree(dm_ctx, rp_session, &root, 1, NULL, INTERFACE_GIGAETH0_IPV4, false, &tree);
     assert_int_equal(SR_ERR_NOT_FOUND, rc);
 
 #define INTERFACE_ETH0_IPV4_IP "/ietf-interfaces:interfaces/interface[name='eth0']/ietf-ip:ipv4/address[ip='192.168.2.100']"
-    rc = rp_dt_get_subtree(dm_ctx, rp_session, root, NULL, INTERFACE_ETH0_IPV4_IP, false, &tree);
+    rc = rp_dt_get_subtree(dm_ctx, rp_session, &root, 1, NULL, INTERFACE_ETH0_IPV4_IP, false, &tree);
     assert_int_equal(SR_ERR_OK, rc);
     check_ietf_interfaces_addr_tree(tree, 0, true, true);
     sr_free_tree(tree);
 
 #define INTERFACE_ETH1_IPV4_IP "/ietf-interfaces:interfaces/interface[name='eth1']/ietf-ip:ipv4/address[ip='10.10.1.5']"
-    rc = rp_dt_get_subtree(dm_ctx, rp_session, root, NULL, INTERFACE_ETH1_IPV4_IP, false, &tree);
+    rc = rp_dt_get_subtree(dm_ctx, rp_session, &root, 1, NULL, INTERFACE_ETH1_IPV4_IP, false, &tree);
     assert_int_equal(SR_ERR_OK, rc);
     check_ietf_interfaces_addr_tree(tree, 1, true, true);
     sr_free_tree(tree);
 
 #define INTERFACE_GIGAETH0_IPV4_IP "/ietf-interfaces:interfaces/interface[name='gigaeth0']/ietf-ip:ipv4/address"
-    rc = rp_dt_get_subtree(dm_ctx, rp_session, root, NULL, INTERFACE_GIGAETH0_IPV4_IP, false, &tree);
+    rc = rp_dt_get_subtree(dm_ctx, rp_session, &root, 1, NULL, INTERFACE_GIGAETH0_IPV4_IP, false, &tree);
     assert_int_equal(SR_ERR_NOT_FOUND, rc);
 
     test_rp_session_cleanup(rp_ctx, rp_session);
@@ -541,7 +541,7 @@ void ietf_interfaces_tree_with_opts_test(void **state)
     sr_free_trees(trees, count);
 
     /* slice interfaces and leave only chunk of eth0 */
-    rc = rp_dt_get_subtree_chunk(dm_ctx, rp_session, root, NULL, "/ietf-interfaces:interfaces", 0, 1, 2, 3, false, &tree, &chunk_id);
+    rc = rp_dt_get_subtree_chunk(dm_ctx, rp_session, &root, 1, NULL, "/ietf-interfaces:interfaces", 0, 1, 2, 3, false, &tree, &chunk_id);
     assert_int_equal(SR_ERR_OK, rc);
     assert_null(tree->parent);
     assert_string_equal("/ietf-interfaces:interfaces", chunk_id);
@@ -579,7 +579,7 @@ void ietf_interfaces_tree_with_opts_test(void **state)
     sr_free_tree(tree);
 
     /* limit depth to only top nodes of all interfaces */
-    rc = rp_dt_get_subtree_chunk(dm_ctx, rp_session, root, NULL, "/ietf-interfaces:interfaces", 0, SIZE_MAX, SIZE_MAX, 2, false, &tree,
+    rc = rp_dt_get_subtree_chunk(dm_ctx, rp_session, &root, 1, NULL, "/ietf-interfaces:interfaces", 0, SIZE_MAX, SIZE_MAX, 2, false, &tree,
             &chunk_id);
     assert_int_equal(SR_ERR_OK, rc);
     assert_null(tree->parent);
@@ -603,8 +603,8 @@ void ietf_interfaces_tree_with_opts_test(void **state)
     sr_free_tree(tree);
 
     /* slice eth0 out and get full two levels of the remaining interfaces */
-    rc = rp_dt_get_subtree_chunk(dm_ctx, rp_session, root, NULL, "/ietf-interfaces:interfaces", 1, SIZE_MAX, SIZE_MAX, 3, false, &tree,
-            &chunk_id);
+    rc = rp_dt_get_subtree_chunk(dm_ctx, rp_session, &root, 1, NULL, "/ietf-interfaces:interfaces", 1,
+            SIZE_MAX, SIZE_MAX, 3, false, &tree, &chunk_id);
     assert_int_equal(SR_ERR_OK, rc);
     assert_null(tree->parent);
     assert_string_equal("/ietf-interfaces:interfaces", chunk_id);
@@ -723,7 +723,7 @@ void get_values_test_module_test(void **state){
     sr_val_t *value;
 
     /* enum leaf*/
-    rc = rp_dt_get_value(dm_ctx, rp_session, root, NULL, XP_TEST_MODULE_ENUM, false, &value);
+    rc = rp_dt_get_value(dm_ctx, rp_session, &root, 1, NULL, XP_TEST_MODULE_ENUM, false, &value);
     assert_int_equal(SR_ERR_OK, rc);
 
     assert_int_equal(SR_ENUM_T, value->type);
@@ -732,7 +732,7 @@ void get_values_test_module_test(void **state){
     sr_free_val(value);
 
     /* binary leaf*/
-    rc = rp_dt_get_value(dm_ctx, rp_session, root, NULL, XP_TEST_MODULE_RAW, false, &value);
+    rc = rp_dt_get_value(dm_ctx, rp_session, &root, 1, NULL, XP_TEST_MODULE_RAW, false, &value);
     assert_int_equal(SR_ERR_OK, rc);
 
     assert_int_equal(SR_BINARY_T, value->type);
@@ -741,7 +741,7 @@ void get_values_test_module_test(void **state){
     sr_free_val(value);
 
     /*bits leaf*/
-    rc = rp_dt_get_value(dm_ctx, rp_session, root, NULL, XP_TEST_MODULE_BITS, false, &value);
+    rc = rp_dt_get_value(dm_ctx, rp_session, &root, 1, NULL, XP_TEST_MODULE_BITS, false, &value);
     assert_int_equal(SR_ERR_OK, rc);
 
     assert_int_equal(SR_BITS_T, value->type);
@@ -751,7 +751,7 @@ void get_values_test_module_test(void **state){
 
     /* leafref */
 #define LEAFREF_XP "/test-module:university/classes/class[title='CCNA']/student[name='nameB']/age"
-    rc = rp_dt_get_value(dm_ctx, rp_session, root, NULL, LEAFREF_XP, false, &value);
+    rc = rp_dt_get_value(dm_ctx, rp_session, &root, 1, NULL, LEAFREF_XP, false, &value);
     assert_int_equal(SR_ERR_OK, rc);
 
     assert_int_equal(SR_UINT8_T, value->type);
@@ -778,7 +778,7 @@ void get_tree_test_module_test(void **state)
     sr_node_t *tree = NULL;
 
     /* enum leaf */
-    rc = rp_dt_get_subtree(dm_ctx, rp_session, root, NULL, XP_TEST_MODULE_ENUM, false, &tree);
+    rc = rp_dt_get_subtree(dm_ctx, rp_session, &root, 1, NULL, XP_TEST_MODULE_ENUM, false, &tree);
     assert_int_equal(SR_ERR_OK, rc);
     assert_string_equal("enum", tree->name);
     assert_string_equal("test-module", tree->module_name);
@@ -793,7 +793,7 @@ void get_tree_test_module_test(void **state)
     sr_free_tree(tree);
 
     /* binary leaf*/
-    rc = rp_dt_get_subtree(dm_ctx, rp_session, root, NULL, XP_TEST_MODULE_RAW, false, &tree);
+    rc = rp_dt_get_subtree(dm_ctx, rp_session, &root, 1, NULL, XP_TEST_MODULE_RAW, false, &tree);
     assert_int_equal(SR_ERR_OK, rc);
     assert_string_equal("raw", tree->name);
     assert_string_equal("test-module", tree->module_name);
@@ -808,7 +808,7 @@ void get_tree_test_module_test(void **state)
     sr_free_tree(tree);
 
     /*bits leaf*/
-    rc = rp_dt_get_subtree(dm_ctx, rp_session, root, NULL, XP_TEST_MODULE_BITS, false, &tree);
+    rc = rp_dt_get_subtree(dm_ctx, rp_session, &root, 1, NULL, XP_TEST_MODULE_BITS, false, &tree);
     assert_int_equal(SR_ERR_OK, rc);
     assert_string_equal("options", tree->name);
     assert_string_equal("test-module", tree->module_name);
@@ -824,7 +824,7 @@ void get_tree_test_module_test(void **state)
 
     /* leafref */
 #define LEAFREF_XP "/test-module:university/classes/class[title='CCNA']/student[name='nameB']/age"
-    rc = rp_dt_get_subtree(dm_ctx, rp_session, root, NULL, LEAFREF_XP, false, &tree);
+    rc = rp_dt_get_subtree(dm_ctx, rp_session, &root, 1, NULL, LEAFREF_XP, false, &tree);
     assert_int_equal(SR_ERR_OK, rc);
     assert_string_equal("age", tree->name);
     assert_string_equal("test-module", tree->module_name);
@@ -860,7 +860,7 @@ void get_values_test(void **state){
     size_t count = 0;
 
     #define XP_MODULE "/example-module:*"
-    rc = rp_dt_get_values(dm_ctx, rp_session, root, NULL, XP_MODULE, false, &values, &count);
+    rc = rp_dt_get_values(dm_ctx, rp_session, &root, 1, NULL, XP_MODULE, false, &values, &count);
     assert_int_equal(SR_ERR_OK, rc);
     assert_int_equal(4, count); /*container + 3 leaf-list instances */
     for (size_t i = 0; i < count; i++) {
@@ -869,7 +869,7 @@ void get_values_test(void **state){
     sr_free_values(values, count);
 
 #define XP_LEAF "/example-module:container/list[key1='key1'][key2='key2']/leaf"
-    rc = rp_dt_get_values(dm_ctx, rp_session, root, NULL, XP_LEAF, false, &values, &count);
+    rc = rp_dt_get_values(dm_ctx, rp_session, &root, 1, NULL, XP_LEAF, false, &values, &count);
     assert_int_equal(SR_ERR_OK, rc);
     assert_int_equal(1, count);
     for (size_t i = 0; i < count; i++) {
@@ -879,7 +879,7 @@ void get_values_test(void **state){
     sr_free_values(values, count);
 
 #define XP_LIST_WITH_KEYS "/example-module:container/list[key1='key1'][key2='key2']/*"
-    rc = rp_dt_get_values(dm_ctx, rp_session, root, NULL, XP_LIST_WITH_KEYS, false, &values, &count);
+    rc = rp_dt_get_values(dm_ctx, rp_session, &root, 1, NULL, XP_LIST_WITH_KEYS, false, &values, &count);
     assert_int_equal(SR_ERR_OK, rc);
     assert_int_equal(3, count);
     for (size_t i = 0; i < count; i++) {
@@ -888,7 +888,7 @@ void get_values_test(void **state){
     sr_free_values(values, count);
 
 #define XP_LIST_WITHOUT_KEYS "/example-module:container/list"
-    rc = rp_dt_get_values(dm_ctx, rp_session, root, NULL, XP_LIST_WITHOUT_KEYS, false, &values, &count);
+    rc = rp_dt_get_values(dm_ctx, rp_session, &root, 1, NULL, XP_LIST_WITHOUT_KEYS, false, &values, &count);
     assert_int_equal(SR_ERR_OK, rc);
     assert_int_equal(2, count);
     for (size_t i = 0; i < count; i++) {
@@ -897,7 +897,7 @@ void get_values_test(void **state){
     sr_free_values(values, count);
 
 #define XP_CONTAINER "/example-module:container"
-    rc = rp_dt_get_values(dm_ctx, rp_session, root, NULL, XP_CONTAINER, false, &values, &count);
+    rc = rp_dt_get_values(dm_ctx, rp_session, &root, 1, NULL, XP_CONTAINER, false, &values, &count);
     assert_int_equal(SR_ERR_OK, rc);
     assert_int_equal(1, count);
     for (size_t i = 0; i < count; i++) {
@@ -906,7 +906,7 @@ void get_values_test(void **state){
     sr_free_values(values, count);
 
 #define XP_LEAFLIST "/example-module:number"
-    rc = rp_dt_get_values(dm_ctx, rp_session, root, NULL, XP_LEAFLIST, false, &values, &count);
+    rc = rp_dt_get_values(dm_ctx, rp_session, &root, 1, NULL, XP_LEAFLIST, false, &values, &count);
     assert_int_equal(SR_ERR_OK, rc);
     assert_int_equal(3, count);
     for (size_t i = 0; i < count; i++) {
@@ -1090,7 +1090,7 @@ void get_values_opts_test(void **state) {
 
 #define EX_CONT "/example-module:container//*"
     struct ly_set *nodes = NULL;
-    rc = rp_dt_find_nodes_with_opts(ctx->dm_ctx, ses_ctx, &get_items_ctx, root, EX_CONT, 0, 3, &nodes);
+    rc = rp_dt_find_nodes_with_opts(ctx->dm_ctx, ses_ctx, &get_items_ctx, &root, 1, EX_CONT, 0, 3, &nodes);
     assert_int_equal(rc, SR_ERR_OK);
     ly_set_free(nodes);
 
@@ -1142,7 +1142,7 @@ void get_values_with_augments_test(void **state){
     createDataTreeWithAugments(data_tree->schema->module->ctx, &root);
     assert_non_null(root);
 #define SM_MODULE "/small-module:item/*"
-    rc = rp_dt_get_values(dm_ctx, rp_session, root, NULL, SM_MODULE, false, &values, &count);
+    rc = rp_dt_get_values(dm_ctx, rp_session, &root, 1, NULL, SM_MODULE, false, &values, &count);
     assert_int_equal(SR_ERR_OK, rc);
     assert_int_equal(2, count);
 
@@ -1209,11 +1209,11 @@ void get_value_test(void **state)
     rc = dm_get_datatree(rp_ctx->dm_ctx, rp_session->dm_session, "example-module", &data_tree);
     assert_int_equal(SR_ERR_OK, rc);
 
-    assert_int_equal(SR_ERR_INVAL_ARG, rp_dt_get_value(dm_ctx, rp_session, data_tree, NULL, "/example-module:", false, &value));
+    assert_int_equal(SR_ERR_INVAL_ARG, rp_dt_get_value(dm_ctx, rp_session, &data_tree, 1, NULL, "/example-module:", false, &value));
 
     /*leaf*/
 #define XPATH_FOR_VALUE "/example-module:container/list[key1='key1'][key2='key2']/leaf"
-    assert_int_equal(SR_ERR_OK, rp_dt_get_value(dm_ctx, rp_session, data_tree, NULL, XPATH_FOR_VALUE, false, &value));
+    assert_int_equal(SR_ERR_OK, rp_dt_get_value(dm_ctx, rp_session, &data_tree, 1, NULL, XPATH_FOR_VALUE, false, &value));
 
     assert_int_equal(SR_STRING_T, value->type);
     assert_string_equal("Leaf value", value->data.string_val);
@@ -1223,7 +1223,7 @@ void get_value_test(void **state)
 
     /*list*/
 #define XPATH_FOR_LIST "/example-module:container/list[key1='key1'][key2='key2']"
-    assert_int_equal(SR_ERR_OK, rp_dt_get_value(dm_ctx, rp_session, data_tree, NULL, XPATH_FOR_LIST, false, &value));
+    assert_int_equal(SR_ERR_OK, rp_dt_get_value(dm_ctx, rp_session, &data_tree, 1, NULL, XPATH_FOR_LIST, false, &value));
     assert_non_null(value);
     assert_int_equal(SR_LIST_T, value->type);
     assert_string_equal(XPATH_FOR_LIST, value->xpath);
@@ -1231,7 +1231,7 @@ void get_value_test(void **state)
 
     /*container*/
 #define XPATH_FOR_CONTAINER "/example-module:container"
-    assert_int_equal(SR_ERR_OK, rp_dt_get_value(dm_ctx, rp_session, data_tree, NULL, "/example-module:container", false, &value));
+    assert_int_equal(SR_ERR_OK, rp_dt_get_value(dm_ctx, rp_session, &data_tree, 1, NULL, "/example-module:container", false, &value));
     assert_non_null(value);
     assert_int_equal(SR_CONTAINER_T, value->type);
     assert_string_equal(XPATH_FOR_CONTAINER, value->xpath);
@@ -1254,11 +1254,11 @@ void get_tree_test(void **state)
     rc = dm_get_datatree(dm_ctx, rp_session->dm_session, "example-module", &data_tree);
     assert_int_equal(SR_ERR_OK, rc);
 
-    assert_int_equal(SR_ERR_INVAL_ARG, rp_dt_get_subtree(dm_ctx, rp_session, data_tree, NULL, "/example-module:", false, &tree));
+    assert_int_equal(SR_ERR_INVAL_ARG, rp_dt_get_subtree(dm_ctx, rp_session, &data_tree, 1, NULL, "/example-module:", false, &tree));
 
     /*leaf*/
 #define XPATH_FOR_VALUE "/example-module:container/list[key1='key1'][key2='key2']/leaf"
-    assert_int_equal(SR_ERR_OK, rp_dt_get_subtree(dm_ctx, rp_session, data_tree, NULL, XPATH_FOR_VALUE, false, &tree));
+    assert_int_equal(SR_ERR_OK, rp_dt_get_subtree(dm_ctx, rp_session, &data_tree, 1, NULL, XPATH_FOR_VALUE, false, &tree));
 
     assert_string_equal("leaf", tree->name);
     assert_string_equal("example-module", tree->module_name);
@@ -1271,7 +1271,7 @@ void get_tree_test(void **state)
 
     /*list*/
 #define XPATH_FOR_LIST "/example-module:container/list[key1='key1'][key2='key2']"
-    assert_int_equal(SR_ERR_OK, rp_dt_get_subtree(dm_ctx, rp_session, data_tree, NULL, XPATH_FOR_LIST, false, &tree));
+    assert_int_equal(SR_ERR_OK, rp_dt_get_subtree(dm_ctx, rp_session, &data_tree, 1, NULL, XPATH_FOR_LIST, false, &tree));
 
     assert_string_equal("list", tree->name);
     assert_string_equal("example-module", tree->module_name);
@@ -1283,7 +1283,7 @@ void get_tree_test(void **state)
 
     /*container*/
 #define XPATH_FOR_CONTAINER "/example-module:container"
-    assert_int_equal(SR_ERR_OK, rp_dt_get_subtree(dm_ctx, rp_session, data_tree, NULL, "/example-module:container", false, &tree));
+    assert_int_equal(SR_ERR_OK, rp_dt_get_subtree(dm_ctx, rp_session, &data_tree, 1, NULL, "/example-module:container", false, &tree));
 
     assert_string_equal("container", tree->name);
     assert_string_equal("example-module", tree->module_name);
@@ -1311,26 +1311,26 @@ void get_node_test_found(void **state)
     assert_int_equal(SR_ERR_OK, rc);
 
 #define XPATH "/example-module:container/list[key1='key1'][key2='key2']/leaf"
-    rc = rp_dt_find_node(ctx, data_tree, XPATH, false, &node);
+    rc = rp_dt_find_node(ctx, &data_tree, 1, XPATH, false, &node);
     assert_int_equal(SR_ERR_OK, rc);
     assert_non_null(node);
     assert_string_equal("leaf", node->schema->name);
 
 /* if key names are specified the order does not matter*/
 #define XPATH2 "/example-module:container/list[key2='key2'][key1='key1']/leaf"
-    rc = rp_dt_find_node(ctx, data_tree, XPATH2, false, &node);
+    rc = rp_dt_find_node(ctx, &data_tree, 1, XPATH2, false, &node);
     assert_int_equal(SR_ERR_OK, rc);
     assert_non_null(node);
     assert_string_equal("leaf", node->schema->name);
 
 #define XPATH_CONT "/example-module:container"
-    rc = rp_dt_find_node(ctx, data_tree, XPATH_CONT, false, &node);
+    rc = rp_dt_find_node(ctx, &data_tree, 1, XPATH_CONT, false, &node);
     assert_int_equal(SR_ERR_OK, rc);
     assert_non_null(node);
     assert_string_equal("container", node->schema->name);
 
 #define XPATH_LIST "/example-module:container/list[key1='key1'][key2='key2']"
-    rc = rp_dt_find_node(ctx, data_tree, XPATH_LIST, false, &node);
+    rc = rp_dt_find_node(ctx, &data_tree, 1, XPATH_LIST, false, &node);
     assert_int_equal(SR_ERR_OK, rc);
     assert_non_null(node);
     assert_string_equal("list", node->schema->name);
@@ -1340,7 +1340,7 @@ void get_node_test_found(void **state)
 
 #define XPATH_LIST_WITHOUT_KEY "/test-module:list"
     /* find node can return at most one element */
-    rc = rp_dt_find_node(ctx, data_tree, XPATH_LIST_WITHOUT_KEY, false, &node);
+    rc = rp_dt_find_node(ctx, &data_tree, 1, XPATH_LIST_WITHOUT_KEY, false, &node);
     assert_int_equal(SR_ERR_INVAL_ARG, rc);
 
     dm_session_stop(ctx, ses_ctx);
@@ -1365,7 +1365,7 @@ void get_nodes_test(void **state){
     struct ly_set *node_set = NULL;
 #define EXAMPLE_LIST "/example-module:container/list[key1='key1'][key2='key2']/*"
 
-    rc = rp_dt_find_nodes(ctx, root, EXAMPLE_LIST, false, &node_set);
+    rc = rp_dt_find_nodes(ctx, &root, 1, EXAMPLE_LIST, false, &node_set);
     assert_int_equal(SR_ERR_OK, rc);
     assert_int_equal(3, node_set->number);
 
@@ -1392,23 +1392,23 @@ void get_node_test_not_found(void **state)
 
     /* non existing nodes*/
 #define XPATH_UNKNOWN1 "/example-module:abc"
-    rc = rp_dt_find_node(ctx, data_tree, XPATH_UNKNOWN1, false, &node);
+    rc = rp_dt_find_node(ctx, &data_tree, 1, XPATH_UNKNOWN1, false, &node);
     assert_int_equal(SR_ERR_NOT_FOUND, rc);
 #define XPATH_UNKNOWN2 "/example-module:container/a"
-    rc = rp_dt_find_node(ctx, data_tree, XPATH_UNKNOWN2, false, &node);
+    rc = rp_dt_find_node(ctx, &data_tree, 1, XPATH_UNKNOWN2, false, &node);
     assert_int_equal(SR_ERR_NOT_FOUND, rc);
 #define XPATH_UNKNOWN3 "/example-module:container/list[key1='key1'][key2='key2']/abc"
-    rc = rp_dt_find_node(ctx, data_tree, XPATH_UNKNOWN3, false, &node);
+    rc = rp_dt_find_node(ctx, &data_tree, 1, XPATH_UNKNOWN3, false, &node);
     assert_int_equal(SR_ERR_NOT_FOUND, rc);
 
     /* non matching key values*/
 #define XPATH_NF "/example-module:container/list[key1='k1'][key2='k2']/leaf"
-    rc = rp_dt_find_node(ctx, data_tree, XPATH_NF, false, &node);
+    rc = rp_dt_find_node(ctx, &data_tree, 1, XPATH_NF, false, &node);
     assert_int_equal(SR_ERR_NOT_FOUND, rc);
 
     /* missing key*/
 #define XPATH_INV "/example-module:container/list[key1='key1']/leaf"
-    rc = rp_dt_find_node(ctx, data_tree, XPATH_INV, false, &node);
+    rc = rp_dt_find_node(ctx, &data_tree, 1, XPATH_INV, false, &node);
     assert_int_equal(SR_ERR_OK, rc);
 
     dm_session_stop(ctx, ses_ctx);

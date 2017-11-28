@@ -33,7 +33,8 @@
  * @brief Retrieves all nodes matching xpath using ::rp_dt_find_nodes and copy fills sr_val_t structures.
  * @param [in] dm_ctx
  * @param [in] rp_session
- * @param [in] data_tree
+ * @param [in] data_trees
+ * @param [in] data_tree_count
  * @param [in] sr_mem
  * @param [in] xpath
  * @param [in] check_enable
@@ -41,23 +42,24 @@
  * @param [out] count
  * @return Error code (SR_ERR_OK on success)
  */
-int rp_dt_get_values(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node *data_tree, sr_mem_ctx_t *sr_mem, const char *xpath, bool check_enable,
-        sr_val_t **values, size_t *count);
+int rp_dt_get_values(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node **data_trees, size_t data_tree_count,
+        sr_mem_ctx_t *sr_mem, const char *xpath, bool check_enable, sr_val_t **values, size_t *count);
 
 /**
  * @brief Returns the value for the specified xpath. If more than one node matching xpath,
  * SR_ERR_INVAL_ARG is returned.
  * @param [in] dm_ctx
  * @param [in] rp_session
- * @param [in] data_tree
+ * @param [in] data_trees
+ * @param [in] data_tree_count
  * @param [in] sr_mem
  * @param [in] xpath
  * @param [in] check_enable
  * @param [out] value
  * @return Error code (SR_ERR_OK on success)
  */
-int rp_dt_get_value(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node *data_tree, sr_mem_ctx_t *sr_mem,
-        const char *xpath, bool check_enable, sr_val_t **value);
+int rp_dt_get_value(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node **data_trees, size_t data_tree_count,
+        sr_mem_ctx_t *sr_mem, const char *xpath, bool check_enable, sr_val_t **value);
 
 /**
  * @brief Returns the value for the specified xpath.
@@ -115,21 +117,24 @@ int rp_dt_get_values_from_nodes(sr_mem_ctx_t *sr_mem, struct ly_set *nodes, sr_v
  * SR_ERR_INVAL_ARG is returned.
  * @param [in] dm_ctx
  * @param [in] rp_session
- * @param [in] data_tree
+ * @param [in] data_trees
+ * @param [in] data_tree_count
  * @param [in] sr_mem
  * @param [in] xpath
  * @param [in] check_enable
  * @param [out] subtree
  * @return Error code (SR_ERR_OK on success)
  */
-int rp_dt_get_subtree(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node *data_tree, sr_mem_ctx_t *sr_mem, const char *xpath, bool check_enable, sr_node_t **subtree);
+int rp_dt_get_subtree(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node **data_trees, size_t data_tree_count,
+        sr_mem_ctx_t *sr_mem, const char *xpath, bool check_enable, sr_node_t **subtree);
 
 /**
  * @brief Returns subtree *chunk* with the root node at the specified xpath. If more than one node matching xpath,
  * SR_ERR_INVAL_ARG is returned.
  * @param [in] dm_ctx
  * @param [in] rp_session
- * @param [in] data_tree
+ * @param [in] data_trees
+ * @param [in] data_tree_count
  * @param [in] sr_mem
  * @param [in] xpath
  * @param [in] slice_offset
@@ -141,9 +146,9 @@ int rp_dt_get_subtree(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_nod
  * @param [out] chunk_id
  * @return Error code (SR_ERR_OK on success)
  */
-int rp_dt_get_subtree_chunk(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node *data_tree, sr_mem_ctx_t *sr_mem, const char *xpath,
-    size_t slice_offset, size_t slice_width, size_t child_limit, size_t depth_limit, bool check_enable,
-    sr_node_t **chunk, char **chunk_id);
+int rp_dt_get_subtree_chunk(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node **data_trees, size_t data_tree_count,
+    sr_mem_ctx_t *sr_mem, const char *xpath, size_t slice_offset, size_t slice_width, size_t child_limit,
+    size_t depth_limit, bool check_enable, sr_node_t **chunk, char **chunk_id);
 
 /**
  * @brief Retrieves all subtrees with root nodes matching the specified xpath.

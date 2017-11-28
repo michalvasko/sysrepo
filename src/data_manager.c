@@ -4435,7 +4435,7 @@ dm_perform_netconf_access_control(nacm_ctx_t *nacm_ctx, dm_session_t *session, d
     }
 
     /* start NACM data access validation for this module */
-    rc = nacm_data_validation_start(nacm_ctx, session->user_credentials, new_info->node->schema,
+    rc = nacm_data_validation_start(nacm_ctx, session->user_credentials, lyd_node_module(new_info->node),
             &nacm_data_val_ctx);
     CHECK_RC_MSG_GOTO(rc, cleanup, "Failed to start NACM data validation.");
 
@@ -5593,7 +5593,7 @@ dm_copy_subtree_startup_running(dm_ctx_t *ctx, dm_session_t *session, const char
     CHECK_RC_LOG_GOTO(rc, cleanup, "Delete of previous values in running failed xpath %s", xpath);
 
     /* select a part of configuration to be enabled */
-    rc = rp_dt_find_nodes(ctx, startup_info->node, xpath, false, &nodes);
+    rc = rp_dt_find_nodes(ctx, &startup_info->node, startup_info->node ? 1 : 0, xpath, false, &nodes);
     if (SR_ERR_NOT_FOUND == rc) {
         SR_LOG_DBG("Subtree %s of enabled configuration is empty", xpath);
         rc = SR_ERR_OK;
@@ -5616,7 +5616,7 @@ dm_copy_subtree_startup_running(dm_ctx_t *ctx, dm_session_t *session, const char
                 char *parent_xpath = lyd_path(node->parent);
                 dm_lyd_new_path(candidate_info, parent_xpath, NULL, LYD_PATH_OPT_UPDATE);
                 /* create or find parent node */
-                rc = rp_dt_find_node(ctx, candidate_info->node, parent_xpath, false, &parent);
+                rc = rp_dt_find_node(ctx, &candidate_info->node, candidate_info->node ? 1 : 0, parent_xpath, false, &parent);
                 free(parent_xpath);
                 CHECK_RC_MSG_GOTO(rc, cleanup, "Failed to find parent node");
             }

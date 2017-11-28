@@ -43,11 +43,10 @@ typedef struct rp_tree_pruning_ctx_s {
  *
  * @param [in] dm_ctx Data manager context.
  * @param [in] rp_session Request processor session context.
- * @param [in] data_tree Data tree from which the nodes have been acquired.
- * @param [in, out] nodes An array of nodes to filter.
- * @param [in, out] node_cnt Number of nodes before and after the filtering.
+ * @param [in,out] nodes An array of nodes to filter.
+ * @param [in,out] node_cnt Number of nodes before and after the filtering.
  */
-int rp_dt_nacm_filtering(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node *data_tree,
+int rp_dt_nacm_filtering(dm_ctx_t *dm_ctx, rp_session_t *rp_session,
         struct lyd_node **nodes, unsigned int *node_cnt);
 
 /**
@@ -57,12 +56,12 @@ int rp_dt_nacm_filtering(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_
  * @param [in] dm_ctx Data manager context.
  * @param [in] rp_session Request processor session.
  * @param [in] root Root of the tree to prune.
- * @param [in] data_tree Data tree to which the root belongs to.
+ * @param [in] schema Schema node of the tree to prune (usually root->schema, but not always).
  * @param [in] check_enabled Prune away subtrees which are not enabled.
  * @param [out] pruning_cb Pruning callback to use for ::sr_copy_node_to_tree and the like.
  * @param [out] pruning_ctx Pruning context to use with the callback.
  */
-int rp_dt_init_tree_pruning(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node *root, struct lyd_node *data_tree,
+int rp_dt_init_tree_pruning(dm_ctx_t *dm_ctx, rp_session_t *rp_session, struct lyd_node *root, struct lys_node *schema,
         bool check_enabled, sr_tree_pruning_cb *pruning_cb, rp_tree_pruning_ctx_t **pruning_ctx);
 
 /**

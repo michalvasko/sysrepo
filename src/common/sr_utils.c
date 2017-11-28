@@ -235,7 +235,7 @@ sr_copy_all_ns(const char *xpath, char ***namespaces_p, size_t *ns_count_p)
 
     int rc = SR_ERR_OK;
     char *colon_pos, **tmp, **namespaces = NULL;
-    size_t ns_count = 0;
+    size_t ns_count = 0, i;
 
     if (xpath[0] != '/') {
         return SR_ERR_INVAL_ARG;
@@ -243,13 +243,23 @@ sr_copy_all_ns(const char *xpath, char ***namespaces_p, size_t *ns_count_p)
 
     while ((colon_pos = strchr(xpath, ':'))) {
         for (xpath = colon_pos; isalnum(xpath[-1]) || (xpath[-1] == '_') || (xpath[-1] == '-') || (xpath[-1] == '.'); --xpath);
-        tmp = realloc(namespaces, (ns_count + 1) * sizeof *namespaces);
-        CHECK_NULL_NOMEM_GOTO(tmp, rc, cleanup);
-        namespaces = tmp;
-        ns_count++;
 
-        namespaces[ns_count - 1] = strndup(xpath, colon_pos - xpath);
-        CHECK_NULL_NOMEM_GOTO(namespaces[ns_count - 1], rc, cleanup);
+        /* check for duplicities */
+        for (i = 0; i < ns_count; ++i) {
+            if (0 == strncmp(namespaces[i], xpath, colon_pos - xpath)) {
+                break;
+            }
+        }
+
+        if (i == ns_count) {
+            tmp = realloc(namespaces, (ns_count + 1) * sizeof *namespaces);
+            CHECK_NULL_NOMEM_GOTO(tmp, rc, cleanup);
+            namespaces = tmp;
+            ns_count++;
+
+            namespaces[ns_count - 1] = strndup(xpath, colon_pos - xpath);
+            CHECK_NULL_NOMEM_GOTO(namespaces[ns_count - 1], rc, cleanup);
+        }
 
         xpath = colon_pos + 1;
     }
